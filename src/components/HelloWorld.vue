@@ -7,33 +7,46 @@
 
     <div
       data-aos="fade-up"
-      v-if="visibleData.length != 0"
+     v-if="!resetAnimation"
       class="text-center w-full -mb-14"
     >
       <h1 class="style-script-regular">
-        {{ visibleData[1].food_name }}
+        {{ food_data[currentIndex].food_name }}
+        <!-- ........... current : - {{currentIndex}}
+        , previous :- 
+        {{previousIndex}}
+        nextIndex :-
+        {{nextIndex}} -->
       </h1>
       <p class="text-sm max-w-[450px] mx-auto text-center">
-        {{ visibleData[1].about_food }}
+        {{ food_data[currentIndex].about_food }}
       </p>
     </div>
 
-    <div class="flex items-center gap-5 justify-between h-[100%] w-full">
+   <TransitionGroup  name="fade" tag="div"  mode="out-in" class="flex items-center gap-5 justify-between h-[100%] w-full">
+      
       <img
-        v-for="(item, index) in visibleData"
+        v-for="(item, index) in food_data"
+       :data-index="index"
         :key="index"
         :src="`/img/${item.id}.png`"
-        class="w-[350px] select-none"
+        class="w-[350px] select-none rotateAnimation"
         :class="{
-          'scale-150': index == 1,
-          'relative cursor-pointer z-[9999] -left-[10%]': index == 0,
-          'relative z-50 cursor-pointer -right-[10%]': index == 2,
+          'scale-150 relative left-0 ': index == currentIndex,
+           'rotateAnimation !animate-spin': resetAnimation,
+          'scale-150 relative  left-[38%]': index == currentIndex && previousIndex == 9,
+          'scale-150  relative left-[-38%]': index == currentIndex && nextIndex == 0,
+          'relative left-[60%] w-0 h-0 hidden' : index  > currentIndex && index != nextIndex,
+          'relative -left-[60%] w-0 h-0 hidden' : index  < currentIndex && index != previousIndex,
+          'rotate-previous relative cursor-pointer z-[9999] -left-[10%]':  index == previousIndex,
+          'rotate-next relative z-50 cursor-pointer left-[10%]': index == nextIndex,
         }"
+        style="transition:all 0.5s ease; "
         :alt="item.name"
         @click="
-          index == 0
+          index == (currentIndex - 1 +  food_data.length) %  food_data.length
             ? previous()
-            : index == 2
+            : index == (currentIndex + 1) % food_data.length
             ? next()
             : () => {
                 false;
@@ -41,18 +54,18 @@
         "
         @onContextMenu="false"
       />
-    </div>
-    <div class="absolute bottom-[0%] z-[99] left-[40%]">
-      <!-- <button @click="previous()" class="p-3 text-white bg-slate-300">previous</button>
-      <button @click="next()" class="p-3 text-white bg-slate-300">next</button> -->
-    </div>
+      
+   </TransitionGroup>
   </div>
 </template>
 <script>
 export default {
   data: () => ({
     name: "saurabh",
+    previousIndex:null,
     currentIndex: 0,
+    nextIndex:1,
+       resetAnimation: false,
     food_data: [
       {
         id: 1,
@@ -126,24 +139,66 @@ export default {
       },
     ],
   }),
+  mounted(){
+    this.visibleData();
+  },
   methods: {
     next() {
-      this.currentIndex = (this.currentIndex + 1) % 10;
-      console.log(this.currentIndex);
+      // this.currentIndex = (this.currentIndex + 1) % 10;
+      // // console.log('current',this.currentIndex, 'next', this.currentIndex + 1,'previous', this.currentIndex - 1);
+      // this.visibleData()
+      // console.log('next', this.nextIndex, 'previous', this.previousIndex, 'current', this.currentIndex)
+
+       if (this.currentIndex < this.food_data.length - 1) {
+        this.currentIndex++;
+           this.resetAnimation = true; // Set animation flag
+        setTimeout(() => {
+          this.resetAnimation = false; // Reset animation flag after animation duration
+        }, 500); // Adjust animation duration as needed
+        this.visibleData();
+      }
+     
     },
     previous() {
-      this.currentIndex = (this.currentIndex - 1 + 10) % 10;
-      console.log(this.currentIndex);
+      // this.currentIndex = (this.currentIndex - 1 + 10) % 10;
+      // // console.log(this.currentIndex);
+      //   //  console.log('current',this.currentIndex, 'previous', this.currentIndex + 1,'next', this.currentIndex - 1);
+      //     console.log('next', this.nextIndex, 'previous', this.previousIndex, 'current', this.currentIndex)
+       if (this.currentIndex > 0) {
+        this.currentIndex--;
+           this.resetAnimation = true; // Set animation flag
+        setTimeout(() => {
+          this.resetAnimation = false; // Reset animation flag after animation duration
+        }, 500); // Adjust animation duration as needed
+        this.visibleData();
+      }
     },
-  },
-  computed: {
-    visibleData() {
-      return [
-        this.food_data[(this.currentIndex - 1 + 10) % 10], // Previous data item
-        this.food_data[this.currentIndex], // Current data item (middle)
-        this.food_data[(this.currentIndex + 1) % 10], // Next data item
-      ];
+    visibleData(){
+       
+       this.previousIndex =  (this.currentIndex - 1 + 10) % 10 // Previous data item
+        // this.currentIndex, // Current data item (middle)
+       this.nextIndex =  (this.currentIndex + 1) % 10 // Next data item
     },
   },
 };
 </script>
+<style lang="scss" scoped>
+.fade-enter-active, .fade-leave-active {
+  transition: opacity .5s
+}
+.fade-enter, .fade-leave-to /* .fade-leave-active in <2.1.8 */ {
+  opacity:
+   0
+}
+.rotateAnimation{
+  animation: rotateImg 1s;
+}
+@keyframes rotateImg {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+</style>
